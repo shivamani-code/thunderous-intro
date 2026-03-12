@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import LightningArcs from "./LightningArcs";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -165,6 +166,9 @@ const ThorHero = () => {
           className="absolute z-10 w-[90vw] max-w-[1200px] opacity-0 select-none pointer-events-none object-contain"
           style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         />
+
+        {/* Electric arcs around Thor */}
+        <LightningArcs active={revealed} />
 
         {/* Layer 2 (Z-20): Thor character */}
         <img
