@@ -7,7 +7,8 @@ gsap.registerPlugin(ScrollTrigger);
 const ThorHero = () => {
   const [revealed, setRevealed] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
-  const flashRef = useRef<HTMLDivElement>(null);
+  const lightningRef = useRef<HTMLDivElement>(null);
+  const lightningVideoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const thorRef = useRef<HTMLImageElement>(null);
   const textLayerRef = useRef<HTMLImageElement>(null);
@@ -20,65 +21,66 @@ const ThorHero = () => {
 
     const tl = gsap.timeline();
 
-    // === PHASE 1: THE STRIKE ===
-    // Show the lightning overlay immediately
-    tl.set(flashRef.current, { display: "block", opacity: 0 });
+    // Show lightning overlay + play both video and audio simultaneously
+    tl.call(() => {
+      if (lightningRef.current) lightningRef.current.style.display = "block";
+      if (lightningVideoRef.current) {
+        lightningVideoRef.current.currentTime = 0;
+        lightningVideoRef.current.play().catch(() => {});
+      }
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => {});
+      }
+    });
 
-    // Strobe: 0 -> 1 -> 0.3 -> 1 -> 0 over ~400ms
-    // Audio fires at the exact moment first strobe hits opacity: 1
-    tl.to(flashRef.current, {
-      opacity: 1,
-      duration: 0.06,
-      ease: "power2.in",
-      onComplete: () => {
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play().catch(() => {});
-        }
-      },
-    })
-      .to(flashRef.current, { opacity: 0.3, duration: 0.08, ease: "none" })
-      .to(flashRef.current, { opacity: 1, duration: 0.06, ease: "none" })
-      .to(flashRef.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
+    // Lightning overlay visible for the duration of the video
+    tl.set(lightningRef.current, { opacity: 1 });
 
-    // Violent shake on the root container — concurrent with strobes
+    // At ~500ms — violent shake (the "impact" moment)
     tl.to(
       containerRef.current,
       {
         x: "random(-20, 20)",
         y: "random(-20, 20)",
         duration: 0.05,
-        repeat: 10,
+        repeat: 12,
         yoyo: true,
         ease: "none",
       },
-      0
+      0.5
     );
-    // Reset position after shake
-    tl.set(containerRef.current, { x: 0, y: 0 });
+    tl.set(containerRef.current, { x: 0, y: 0 }, 1.2);
 
-    // === PHASE 2: SEQUENTIAL REVEAL (after strobe finishes ~0.4s) ===
-    // Fade out black overlay
+    // Fade out black overlay while lightning is still visible
     tl.to(overlayRef.current, {
+      opacity: 0,
+      duration: 0.6,
+      ease: "power2.out",
+    }, 0.5);
+
+    // Fade out lightning overlay as the bolt fades
+    tl.to(lightningRef.current, {
       opacity: 0,
       duration: 0.8,
       ease: "power2.out",
-    }, 0.35);
+    }, 1.0);
 
-    // Text appears FIRST — blur-to-clear at 12% opacity
+    // === REVEAL — after lightning fades ===
+    // Background text first — blur to clear
     tl.fromTo(
       textLayerRef.current,
       { opacity: 0, filter: "blur(24px)", scale: 0.85 },
       { opacity: 0.12, filter: "blur(0px)", scale: 1, duration: 1.2, ease: "power2.out" },
-      0.45
+      1.0
     );
 
-    // Thor slides in from bottom AFTER text starts
+    // Thor "lands" — scale down from 1.2, fade in
     tl.fromTo(
       thorRef.current,
-      { opacity: 0, y: 120, scale: 0.5 },
-      { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: "power4.out" },
-      0.7
+      { opacity: 0, scale: 1.2, y: 40 },
+      { opacity: 1, scale: 1, y: 0, duration: 1.2, ease: "power4.out" },
+      1.2
     );
 
     // UI elements last
@@ -86,10 +88,15 @@ const ThorHero = () => {
       uiRef.current,
       { opacity: 0, y: 30 },
       { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" },
-      1.1
+      1.6
     );
 
-    // === PHASE 3: Parallax scroll ===
+    // Cleanup: hide lightning container so it doesn't block clicks
+    tl.call(() => {
+      if (lightningRef.current) lightningRef.current.style.display = "none";
+    });
+
+    // Setup parallax scroll
     tl.call(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
@@ -111,19 +118,23 @@ const ThorHero = () => {
 
   return (
     <div ref={containerRef} className="relative min-h-[200vh]">
-      {/* Audio */}
+      {/* Thunder audio */}
       <video ref={audioRef} src="/assets/thunder-2.mp4" className="hidden" playsInline preload="auto" />
 
-      {/* Lightning overlay — highest z-index, hidden by default */}
+      {/* Lightning video overlay — highest z-index, hidden until triggered */}
       <div
-        ref={flashRef}
+        ref={lightningRef}
         className="fixed inset-0 z-[100] pointer-events-none"
-        style={{
-          display: "none",
-          opacity: 0,
-          background: "radial-gradient(circle, hsl(210 100% 95%), hsl(210 80% 70%))",
-        }}
-      />
+        style={{ display: "none", opacity: 0 }}
+      >
+        <video
+          ref={lightningVideoRef}
+          src="/assets/lightning.mp4"
+          muted
+          playsInline
+          className="w-full h-full object-cover"
+        />
+      </div>
 
       {/* Black overlay / summon screen */}
       <div
