@@ -18,77 +18,78 @@ const ThorHero = () => {
     if (revealed) return;
     setRevealed(true);
 
-    // Play audio
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
-    }
-
     const tl = gsap.timeline();
 
-    // === PHASE 1: THE STRIKE (0s - 0.6s) ===
-    // Rapid lightning flashes — multiple strobes
-    tl.set(flashRef.current, { opacity: 1 })
-      .to(flashRef.current, { opacity: 0, duration: 0.06, ease: "power2.out" }, 0.0)
-      .set(flashRef.current, { opacity: 0.9 }, 0.1)
-      .to(flashRef.current, { opacity: 0, duration: 0.05 }, 0.1)
-      .set(flashRef.current, { opacity: 1 }, 0.2)
-      .to(flashRef.current, { opacity: 0.3, duration: 0.08 }, 0.2)
-      .set(flashRef.current, { opacity: 0.7 }, 0.35)
-      .to(flashRef.current, { opacity: 0, duration: 0.1 }, 0.35)
-      .set(flashRef.current, { opacity: 0.4 }, 0.5)
-      .to(flashRef.current, { opacity: 0, duration: 0.15, ease: "power2.out" }, 0.5);
+    // === PHASE 1: THE STRIKE ===
+    // Show the lightning overlay immediately
+    tl.set(flashRef.current, { display: "block", opacity: 0 });
 
-    // Violent shake — high frequency, large offsets
-    const shakeFrames = [];
-    for (let i = 0; i < 16; i++) {
-      shakeFrames.push({
-        x: (Math.random() - 0.5) * 30,
-        y: (Math.random() - 0.5) * 20,
-        rotation: (Math.random() - 0.5) * 2,
-        duration: 0.04,
-      });
-    }
-    shakeFrames.push({ x: 0, y: 0, rotation: 0, duration: 0.08 });
+    // Strobe: 0 -> 1 -> 0.3 -> 1 -> 0 over ~400ms
+    // Audio fires at the exact moment first strobe hits opacity: 1
+    tl.to(flashRef.current, {
+      opacity: 1,
+      duration: 0.06,
+      ease: "power2.in",
+      onComplete: () => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play().catch(() => {});
+        }
+      },
+    })
+      .to(flashRef.current, { opacity: 0.3, duration: 0.08, ease: "none" })
+      .to(flashRef.current, { opacity: 1, duration: 0.06, ease: "none" })
+      .to(flashRef.current, { opacity: 0, duration: 0.2, ease: "power2.out" });
 
-    tl.to(containerRef.current, {
-      keyframes: shakeFrames,
-      ease: "none",
-    }, 0);
+    // Violent shake on the root container — concurrent with strobes
+    tl.to(
+      containerRef.current,
+      {
+        x: "random(-20, 20)",
+        y: "random(-20, 20)",
+        duration: 0.05,
+        repeat: 10,
+        yoyo: true,
+        ease: "none",
+      },
+      0
+    );
+    // Reset position after shake
+    tl.set(containerRef.current, { x: 0, y: 0 });
 
-    // === PHASE 2: THE REVEAL (0.5s+) — Thor & text appear AFTER the shake peak ===
+    // === PHASE 2: SEQUENTIAL REVEAL (after strobe finishes ~0.4s) ===
     // Fade out black overlay
     tl.to(overlayRef.current, {
       opacity: 0,
-      duration: 1,
+      duration: 0.8,
       ease: "power2.out",
-    }, 0.4);
+    }, 0.35);
 
-    // Background text: blur-to-clear + fade in
+    // Text appears FIRST — blur-to-clear at 12% opacity
     tl.fromTo(
       textLayerRef.current,
-      { scale: 0.85, opacity: 0, filter: "blur(20px)" },
-      { scale: 1, opacity: 0.12, filter: "blur(0px)", duration: 1.4, ease: "power2.out" },
-      0.55
+      { opacity: 0, filter: "blur(24px)", scale: 0.85 },
+      { opacity: 0.12, filter: "blur(0px)", scale: 1, duration: 1.2, ease: "power2.out" },
+      0.45
     );
 
-    // Thor: "landing" power-up — starts small, scales up with power4.out
+    // Thor slides in from bottom AFTER text starts
     tl.fromTo(
       thorRef.current,
-      { scale: 0.5, opacity: 0, y: 60 },
-      { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: "power4.out" },
-      0.6
+      { opacity: 0, y: 120, scale: 0.5 },
+      { opacity: 1, y: 0, scale: 1, duration: 1.2, ease: "power4.out" },
+      0.7
     );
 
-    // UI elements fade in last
+    // UI elements last
     tl.fromTo(
       uiRef.current,
       { opacity: 0, y: 30 },
       { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" },
-      1.0
+      1.1
     );
 
-    // === PHASE 3: Setup scroll parallax after reveal ===
+    // === PHASE 3: Parallax scroll ===
     tl.call(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
@@ -111,13 +112,17 @@ const ThorHero = () => {
   return (
     <div ref={containerRef} className="relative min-h-[200vh]">
       {/* Audio */}
-      <video ref={audioRef} src="/assets/thunder.mp4" className="hidden" playsInline preload="auto" />
+      <video ref={audioRef} src="/assets/thunder-2.mp4" className="hidden" playsInline preload="auto" />
 
-      {/* Flash overlay — lightning strobe */}
+      {/* Lightning overlay — highest z-index, hidden by default */}
       <div
         ref={flashRef}
-        className="fixed inset-0 z-[100] pointer-events-none opacity-0"
-        style={{ background: "radial-gradient(circle, hsl(210 100% 95%), hsl(210 80% 70%))" }}
+        className="fixed inset-0 z-[100] pointer-events-none"
+        style={{
+          display: "none",
+          opacity: 0,
+          background: "radial-gradient(circle, hsl(210 100% 95%), hsl(210 80% 70%))",
+        }}
       />
 
       {/* Black overlay / summon screen */}
@@ -137,7 +142,6 @@ const ThorHero = () => {
 
       {/* Hero section */}
       <section className="relative h-screen w-full overflow-hidden flex items-center justify-center sticky top-0">
-        {/* BG gradient */}
         <div className="absolute inset-0 z-0" style={{
           background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8%) 0%, hsl(220 20% 4%) 60%, hsl(0 0% 0%) 100%)"
         }} />
