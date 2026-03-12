@@ -12,7 +12,7 @@ const ThorHero = () => {
   const thorRef = useRef<HTMLImageElement>(null);
   const textLayerRef = useRef<HTMLImageElement>(null);
   const uiRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLVideoElement>(null);
 
   const handleSummon = useCallback(() => {
     if (revealed) return;
@@ -26,33 +26,69 @@ const ThorHero = () => {
 
     const tl = gsap.timeline();
 
-    // Flash
+    // === PHASE 1: THE STRIKE (0s - 0.6s) ===
+    // Rapid lightning flashes — multiple strobes
     tl.set(flashRef.current, { opacity: 1 })
-      .to(flashRef.current, { opacity: 0, duration: 0.15, ease: "power2.out" });
+      .to(flashRef.current, { opacity: 0, duration: 0.06, ease: "power2.out" }, 0.0)
+      .set(flashRef.current, { opacity: 0.9 }, 0.1)
+      .to(flashRef.current, { opacity: 0, duration: 0.05 }, 0.1)
+      .set(flashRef.current, { opacity: 1 }, 0.2)
+      .to(flashRef.current, { opacity: 0.3, duration: 0.08 }, 0.2)
+      .set(flashRef.current, { opacity: 0.7 }, 0.35)
+      .to(flashRef.current, { opacity: 0, duration: 0.1 }, 0.35)
+      .set(flashRef.current, { opacity: 0.4 }, 0.5)
+      .to(flashRef.current, { opacity: 0, duration: 0.15, ease: "power2.out" }, 0.5);
 
-    // Shake
+    // Violent shake — high frequency, large offsets
+    const shakeFrames = [];
+    for (let i = 0; i < 16; i++) {
+      shakeFrames.push({
+        x: (Math.random() - 0.5) * 30,
+        y: (Math.random() - 0.5) * 20,
+        rotation: (Math.random() - 0.5) * 2,
+        duration: 0.04,
+      });
+    }
+    shakeFrames.push({ x: 0, y: 0, rotation: 0, duration: 0.08 });
+
     tl.to(containerRef.current, {
-      keyframes: [
-        { x: -8, y: 4, duration: 0.05 },
-        { x: 6, y: -6, duration: 0.05 },
-        { x: -4, y: 8, duration: 0.05 },
-        { x: 8, y: -4, duration: 0.05 },
-        { x: -6, y: -6, duration: 0.05 },
-        { x: 4, y: 6, duration: 0.05 },
-        { x: -8, y: -4, duration: 0.05 },
-        { x: 6, y: 8, duration: 0.05 },
-        { x: 0, y: 0, duration: 0.05 },
-      ],
+      keyframes: shakeFrames,
       ease: "none",
     }, 0);
 
-    // Reveal — fade overlay, scale in Thor, fade text
-    tl.to(overlayRef.current, { opacity: 0, duration: 0.8, ease: "power2.out" }, 0.15)
-      .fromTo(thorRef.current, { scale: 1.15, opacity: 0 }, { scale: 1, opacity: 1, duration: 1, ease: "power3.out" }, 0.2)
-      .fromTo(textLayerRef.current, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 0.12, duration: 1.2, ease: "power2.out" }, 0.3)
-      .fromTo(uiRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" }, 0.6);
+    // === PHASE 2: THE REVEAL (0.5s+) — Thor & text appear AFTER the shake peak ===
+    // Fade out black overlay
+    tl.to(overlayRef.current, {
+      opacity: 0,
+      duration: 1,
+      ease: "power2.out",
+    }, 0.4);
 
-    // Setup scroll parallax after reveal
+    // Background text: blur-to-clear + fade in
+    tl.fromTo(
+      textLayerRef.current,
+      { scale: 0.85, opacity: 0, filter: "blur(20px)" },
+      { scale: 1, opacity: 0.12, filter: "blur(0px)", duration: 1.4, ease: "power2.out" },
+      0.55
+    );
+
+    // Thor: "landing" power-up — starts small, scales up with power4.out
+    tl.fromTo(
+      thorRef.current,
+      { scale: 0.5, opacity: 0, y: 60 },
+      { scale: 1, opacity: 1, y: 0, duration: 1.2, ease: "power4.out" },
+      0.6
+    );
+
+    // UI elements fade in last
+    tl.fromTo(
+      uiRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" },
+      1.0
+    );
+
+    // === PHASE 3: Setup scroll parallax after reveal ===
     tl.call(() => {
       ScrollTrigger.create({
         trigger: containerRef.current,
@@ -75,9 +111,9 @@ const ThorHero = () => {
   return (
     <div ref={containerRef} className="relative min-h-[200vh]">
       {/* Audio */}
-      <video ref={audioRef as any} src="/assets/thunder.mp4" className="hidden" playsInline preload="auto" />
+      <video ref={audioRef} src="/assets/thunder.mp4" className="hidden" playsInline preload="auto" />
 
-      {/* Flash overlay */}
+      {/* Flash overlay — lightning strobe */}
       <div
         ref={flashRef}
         className="fixed inset-0 z-[100] pointer-events-none opacity-0"
@@ -106,7 +142,7 @@ const ThorHero = () => {
           background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8%) 0%, hsl(220 20% 4%) 60%, hsl(0 0% 0%) 100%)"
         }} />
 
-        {/* Layer 1: Background text */}
+        {/* Layer 1 (Z-10): Background text */}
         <img
           ref={textLayerRef}
           src="/assets/text_layer.png"
@@ -115,7 +151,7 @@ const ThorHero = () => {
           style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         />
 
-        {/* Layer 2: Thor character */}
+        {/* Layer 2 (Z-20): Thor character */}
         <img
           ref={thorRef}
           src="/assets/thor.png"
@@ -124,16 +160,14 @@ const ThorHero = () => {
           style={{ bottom: "0", left: "50%", transform: "translateX(-50%)" }}
         />
 
-        {/* Layer 3: UI Elements */}
+        {/* Layer 3 (Z-30): UI Elements */}
         <div ref={uiRef} className="absolute inset-0 z-30 pointer-events-none opacity-0">
-          {/* Logo */}
           <div className="absolute top-8 left-8 md:top-12 md:left-12">
             <span className="text-foreground text-lg md:text-xl font-light tracking-[0.2em] uppercase">
               Cine <span className="font-bold">Daily</span>
             </span>
           </div>
 
-          {/* Movie info */}
           <div className="absolute bottom-12 left-8 md:bottom-16 md:left-12 max-w-xs">
             <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] mb-2">Marvel Studios</p>
             <h1 className="text-foreground text-2xl md:text-4xl font-bold leading-tight mb-4">
@@ -148,7 +182,6 @@ const ThorHero = () => {
             </button>
           </div>
 
-          {/* Scroll indicator */}
           <div className="absolute bottom-12 right-8 md:bottom-16 md:right-12 flex flex-col items-center gap-2">
             <span className="text-muted-foreground text-xs uppercase tracking-widest" style={{ writingMode: "vertical-rl" }}>
               Scroll
@@ -160,7 +193,6 @@ const ThorHero = () => {
         </div>
       </section>
 
-      {/* Spacer for scroll */}
       <section className="h-screen" />
     </div>
   );
