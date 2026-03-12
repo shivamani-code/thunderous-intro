@@ -167,6 +167,9 @@ const ThorHero = () => {
           style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         />
 
+        {/* Electric arcs around Thor */}
+        <LightningArcs active={revealed} />
+
         {/* Layer 2 (Z-20): Thor character */}
         <img
           ref={thorRef}
