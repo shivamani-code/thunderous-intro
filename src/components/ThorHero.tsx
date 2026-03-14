@@ -133,7 +133,8 @@ const ThorHero = () => {
           src="/assets/lightning.mp4"
           muted
           playsInline
-          className="w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ minWidth: "100vw", minHeight: "100vh" }}
         />
       </div>
 
