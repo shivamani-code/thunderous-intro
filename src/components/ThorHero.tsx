@@ -133,8 +133,7 @@ const ThorHero = () => {
           src="/assets/lightning.mp4"
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ minWidth: "100vw", minHeight: "100vh" }}
+          className="w-full h-full object-cover"
         />
       </div>
 
@@ -167,9 +166,6 @@ const ThorHero = () => {
           className="absolute z-10 w-[90vw] max-w-[1200px] opacity-0 select-none pointer-events-none object-contain"
           style={{ top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}
         />
-
-        {/* Electric arcs around Thor */}
-        <LightningArcs active={revealed} />
 
         {/* Layer 2 (Z-20): Thor character */}
         <img
