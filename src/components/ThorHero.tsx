@@ -179,13 +179,13 @@ const ThorHero = () => {
           muted
           playsInline
           preload="auto"
-          className="absolute inset-0 z-0 h-full w-full object-cover"
+          className="absolute inset-0 z-0 h-full w-full object-cover brightness-125 saturate-150"
         />
-        <div className="absolute inset-0 z-0 bg-background/45" />
+        <div className="absolute inset-0 z-0 bg-background/20" />
         <div
           className="absolute inset-0 z-0"
           style={{
-            background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8% / 0.25) 0%, hsl(220 20% 4% / 0.65) 60%, hsl(0 0% 0% / 0.85) 100%)",
+            background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8% / 0.15) 0%, hsl(220 20% 4% / 0.35) 60%, hsl(0 0% 0% / 0.55) 100%)",
           }}
         />
 
