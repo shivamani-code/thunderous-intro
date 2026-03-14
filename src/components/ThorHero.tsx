@@ -130,7 +130,7 @@ const ThorHero = () => {
       >
         <video
           ref={lightningVideoRef}
-          src="/assets/thunder.mp4"
+          src="/assets/lightning.mp4"
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
