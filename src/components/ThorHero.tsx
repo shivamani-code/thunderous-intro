@@ -171,9 +171,22 @@ const ThorHero = () => {
 
       {/* Hero section */}
       <section className="relative h-screen w-full overflow-hidden flex items-center justify-center sticky top-0">
-        <div className="absolute inset-0 z-0" style={{
-          background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8%) 0%, hsl(220 20% 4%) 60%, hsl(0 0% 0%) 100%)"
-        }} />
+        <video
+          src="/assets/thunder.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          className="absolute inset-0 z-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 z-0 bg-background/45" />
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            background: "radial-gradient(ellipse at 50% 80%, hsl(210 60% 8% / 0.25) 0%, hsl(220 20% 4% / 0.65) 60%, hsl(0 0% 0% / 0.85) 100%)",
+          }}
+        />
 
         {/* Layer 1 (Z-10): Background text */}
         <img
