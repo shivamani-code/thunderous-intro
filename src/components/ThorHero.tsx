@@ -64,37 +64,48 @@ const ThorHero = () => {
     );
     tl.set(containerRef.current, { x: 0, y: 0 }, 1.2);
 
-    // Fade out black overlay while thunder video is still visible
+    // Fade out black summon overlay immediately so thunder video is visible
     tl.to(
       overlayRef.current,
       {
         opacity: 0,
-        duration: 0.6,
+        duration: 0.35,
         ease: "power2.out",
       },
-      0.5
+      0
     );
 
-    // === REVEAL — after strike starts fading ===
+    // Fade thunder video out before character reveal
+    tl.to(
+      lightningRef.current,
+      {
+        opacity: 0,
+        duration: 0.8,
+        ease: "power2.out",
+      },
+      1.2
+    );
+
+    // === REVEAL — right as thunder starts fading ===
     tl.fromTo(
       textLayerRef.current,
       { opacity: 0, filter: "blur(24px)", scale: 0.85 },
       { opacity: 0.12, filter: "blur(0px)", scale: 1, duration: 1.2, ease: "power2.out" },
-      1.0
+      1.2
     );
 
     tl.fromTo(
       thorRef.current,
       { opacity: 0, scale: 1.2, y: 40 },
       { opacity: 1, scale: 1, y: 0, duration: 1.2, ease: "power4.out" },
-      1.2
+      1.3
     );
 
     tl.fromTo(
       uiRef.current,
       { opacity: 0, y: 30 },
       { opacity: 1, y: 0, duration: 0.9, ease: "power2.out" },
-      1.6
+      1.75
     );
 
     // Safety cleanup if video end event doesn't fire in a browser
