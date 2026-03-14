@@ -74,6 +74,7 @@ const ThorHero = () => {
       },
       0
     );
+    tl.set(overlayRef.current, { display: "none" }, 0.4);
 
     // Fade thunder video out before character reveal
     tl.to(
