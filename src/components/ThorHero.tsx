@@ -16,17 +16,31 @@ const ThorHero = () => {
   const uiRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLVideoElement>(null);
 
+  const hideLightningOverlay = useCallback(() => {
+    if (!lightningRef.current) return;
+
+    gsap.to(lightningRef.current, {
+      opacity: 0,
+      duration: 0.4,
+      ease: "power2.out",
+      onComplete: () => {
+        if (lightningRef.current) lightningRef.current.style.display = "none";
+      },
+    });
+  }, []);
+
   const handleSummon = useCallback(() => {
     if (revealed) return;
     setRevealed(true);
 
     const tl = gsap.timeline();
 
-    // Show lightning overlay + play both video and audio simultaneously
+    // Show thunder overlay + play both video and audio simultaneously
+    tl.set(lightningRef.current, { display: "block", opacity: 1 });
     tl.call(() => {
-      if (lightningRef.current) lightningRef.current.style.display = "block";
       if (lightningVideoRef.current) {
         lightningVideoRef.current.currentTime = 0;
+        lightningVideoRef.current.onended = hideLightningOverlay;
         lightningVideoRef.current.play().catch(() => {});
       }
       if (audioRef.current) {
@@ -34,9 +48,6 @@ const ThorHero = () => {
         audioRef.current.play().catch(() => {});
       }
     });
-
-    // Lightning overlay visible for the duration of the video
-    tl.set(lightningRef.current, { opacity: 1 });
 
     // At ~500ms — violent shake (the "impact" moment)
     tl.to(
@@ -53,22 +64,18 @@ const ThorHero = () => {
     );
     tl.set(containerRef.current, { x: 0, y: 0 }, 1.2);
 
-    // Fade out black overlay while lightning is still visible
-    tl.to(overlayRef.current, {
-      opacity: 0,
-      duration: 0.6,
-      ease: "power2.out",
-    }, 0.5);
+    // Fade out black overlay while thunder video is still visible
+    tl.to(
+      overlayRef.current,
+      {
+        opacity: 0,
+        duration: 0.6,
+        ease: "power2.out",
+      },
+      0.5
+    );
 
-    // Fade out lightning overlay as the bolt fades
-    tl.to(lightningRef.current, {
-      opacity: 0,
-      duration: 0.8,
-      ease: "power2.out",
-    }, 1.0);
-
-    // === REVEAL — after lightning fades ===
-    // Background text first — blur to clear
+    // === REVEAL — after strike starts fading ===
     tl.fromTo(
       textLayerRef.current,
       { opacity: 0, filter: "blur(24px)", scale: 0.85 },
@@ -76,7 +83,6 @@ const ThorHero = () => {
       1.0
     );
 
-    // Thor "lands" — scale down from 1.2, fade in
     tl.fromTo(
       thorRef.current,
       { opacity: 0, scale: 1.2, y: 40 },
@@ -84,7 +90,6 @@ const ThorHero = () => {
       1.2
     );
 
-    // UI elements last
     tl.fromTo(
       uiRef.current,
       { opacity: 0, y: 30 },
@@ -92,10 +97,8 @@ const ThorHero = () => {
       1.6
     );
 
-    // Cleanup: hide lightning container so it doesn't block clicks
-    tl.call(() => {
-      if (lightningRef.current) lightningRef.current.style.display = "none";
-    });
+    // Safety cleanup if video end event doesn't fire in a browser
+    tl.call(() => hideLightningOverlay(), [], 2.2);
 
     // Setup parallax scroll
     tl.call(() => {
@@ -109,11 +112,12 @@ const ThorHero = () => {
           .to(textLayerRef.current, { y: 100, ease: "none" }, 0),
       });
     });
-  }, [revealed]);
+  }, [hideLightningOverlay, revealed]);
 
   useEffect(() => {
     return () => {
-      ScrollTrigger.getAll().forEach(t => t.kill());
+      if (lightningVideoRef.current) lightningVideoRef.current.onended = null;
+      ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   }, []);
 
@@ -122,18 +126,19 @@ const ThorHero = () => {
       {/* Thunder audio */}
       <video ref={audioRef} src="/assets/thunder-2.mp4" className="hidden" playsInline preload="auto" />
 
-      {/* Lightning video overlay — highest z-index, hidden until triggered */}
+      {/* Thunder video overlay — highest z-index, hidden until triggered */}
       <div
         ref={lightningRef}
-        className="fixed inset-0 z-[100] pointer-events-none"
+        className="fixed inset-0 z-[100] pointer-events-none overflow-hidden bg-background"
         style={{ display: "none", opacity: 0 }}
       >
         <video
           ref={lightningVideoRef}
-          src="/assets/lightning.mp4"
+          src="/assets/thunder.mp4"
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          preload="auto"
+          className="absolute inset-0 h-screen w-screen object-cover"
           style={{ minWidth: "100vw", minHeight: "100vh" }}
         />
       </div>
